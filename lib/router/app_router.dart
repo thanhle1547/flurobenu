@@ -41,9 +41,6 @@ extension _TransitionExtension on Transition {
   ) {
     const zeroOffset = Offset.zero;
 
-    if (transition == Transition.fadeIn)
-      return FadeTransition(opacity: animation, child: child);
-
     if (transition == Transition.rightToLeftWithFade) {
       return SlideTransition(
         position: Tween<Offset>(
@@ -63,10 +60,19 @@ extension _TransitionExtension on Transition {
       );
     }
 
+    late CurvedAnimation? curvedAnimation =
+        curve == null ? null : CurvedAnimation(parent: animation, curve: curve);
+
+    if (transition == Transition.fadeIn)
+      return FadeTransition(
+        opacity: curvedAnimation ?? animation,
+        child: child,
+      );
+
     final tween = Tween(begin: transition.beginOffset, end: zeroOffset);
-    final curvedAnimation = CurvedAnimation(
+    curvedAnimation ??= CurvedAnimation(
       parent: animation,
-      curve: curve ?? _defaultTransitionCurve,
+      curve: _defaultTransitionCurve,
     );
 
     return SlideTransition(
@@ -131,7 +137,8 @@ class AppRouter {
       return _navigatorKey!.currentState!;
     } catch (e) {
       throw StateError(
-          "${e.toString()}. May be you did not create Navigator key");
+        "${e.toString()}. May be you did not create Navigator key",
+      );
     }
   }
 

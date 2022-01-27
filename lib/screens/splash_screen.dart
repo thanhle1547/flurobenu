@@ -20,8 +20,8 @@ class _SplashScreenState extends State<SplashScreen> {
           context,
           AppPages.Post_Published,
           transition: Transition.fadeIn,
-          curve: Curves.easeOutQuart,
-          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeIn,
+          duration: const Duration(milliseconds: 450),
         );
       });
     });
