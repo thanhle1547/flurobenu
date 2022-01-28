@@ -27,10 +27,6 @@ extension _TransitionExtension on Transition {
     }
   }
 
-  Offset? get endOffset {
-    if (this == Transition.rightToLeftWithFade) return const Offset(-1.0, 0.0);
-  }
-
   static Widget builder(
     BuildContext context,
     Animation<double> animation,
@@ -49,13 +45,7 @@ extension _TransitionExtension on Transition {
         ).animate(animation),
         child: FadeTransition(
           opacity: animation,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: zeroOffset,
-              end: transition.endOffset,
-            ).animate(secondaryAnimation),
-            child: child,
-          ),
+          child: child,
         ),
       );
     }
