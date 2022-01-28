@@ -77,8 +77,6 @@ const Transition _defaultTransition = Transition.rightToLeft;
 const Curve _defaultTransitionCurve = Curves.easeOutQuad;
 const Duration _defaultTransitionDuration = Duration(milliseconds: 320);
 
-String _duplicatedPage(String name) => "Duplicated Page: $name";
-
 PageRouteBuilder<T> _createRoute<T>({
   required PageBuilder pageBuilder,
   required RouteSettings settings,
@@ -141,14 +139,14 @@ class AppRouter {
   static Route<dynamic>? onUnknownRoute(RouteSettings settings) =>
       _createRouteFromName(settings.name);
 
-  /// [duration]
+  /// * [duration]
   /// The duration the transition going forwards.
   ///
-  /// [opaque]
+  /// * [opaque]
   ///
   /// {@macro flutter.widgets.TransitionRoute.opaque}
   ///
-  /// [fullscreenDialog]
+  /// * [fullscreenDialog]
   ///
   /// {@macro flutter.widgets.PageRoute.fullscreenDialog}
   static Future<T?> toPage<T extends Object?, B extends BlocBase<Object?>>(
@@ -175,7 +173,7 @@ class AppRouter {
         fullscreenDialog: fullscreenDialog,
       );
 
-  /// [duration]
+  /// * [duration]
   /// The duration the transition going forwards.
   static Future<T?>?
       replaceAllWithPage<T extends Object?, B extends BlocBase<Object?>>(
@@ -211,34 +209,44 @@ class AppRouter {
       backToPageName(context, page.name);
 }
 
+/// throw StateError when you pushed the same page to the stack
+Never _duplicatedPage(String name) =>
+    throw StateError("Duplicated Page: $name");
+
 PageBuilder _resolvePageBuilder<B extends BlocBase<Object?>>({
   required PageBuilder pageBuilder,
   B? blocValue,
   List<BlocProviderSingleChildWidget>? blocProviders,
 }) {
+  if (blocValue != null && blocProviders != null)
+    throw ArgumentError(
+      'Do not pass value to [blocValue] & [blocProviders] at the same time.',
+    );
+
   if (blocValue != null)
     return () => BlocProvider.value(
           value: blocValue,
           child: (() => pageBuilder())(),
         );
-  else if (blocProviders != null)
+
+  if (blocProviders != null)
     return () => MultiBlocProvider(
           providers: blocProviders,
           child: (() => pageBuilder())(),
         );
-  else
-    return pageBuilder;
+
+  return pageBuilder;
 }
 
 extension NavigatorStateExtension on NavigatorState {
-  /// [duration]
+  /// * [duration]
   /// The duration the transition going forwards.
   ///
-  /// [opaque]
+  /// * [opaque]
   ///
   /// {@macro flutter.widgets.TransitionRoute.opaque}
   ///
-  /// [fullscreenDialog]
+  /// * [fullscreenDialog]
   ///
   /// {@macro flutter.widgets.PageRoute.fullscreenDialog}
   Future<T?> toPage<T extends Object?, B extends BlocBase<Object?>>(
@@ -257,8 +265,7 @@ extension NavigatorStateExtension on NavigatorState {
 
     if (pageConfig.preventDuplicates &&
         widget.pages.isNotEmpty &&
-        widget.pages.last.name == page.name)
-      throw StateError(_duplicatedPage(page.name));
+        widget.pages.last.name == page.name) _duplicatedPage(page.name);
 
     return push<T>(
       _createRoute(
@@ -277,7 +284,7 @@ extension NavigatorStateExtension on NavigatorState {
     );
   }
 
-  /// [duration]
+  /// * [duration]
   /// The duration the transition going forwards.
   Future<T?>?
       replaceAllWithPage<T extends Object?, B extends BlocBase<Object?>>(
