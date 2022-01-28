@@ -187,23 +187,26 @@ class AppRouter {
 
   /// [duration]
   /// The duration the transition going forwards.
-  static Future<T?>? replaceAllWithPage<T>(
+  static Future<T?>?
+      replaceAllWithPage<T extends Object?, B extends BlocBase<Object?>>(
     BuildContext context,
     AppPages page, {
     bool Function(Route<dynamic>)? predicate,
     Map<String, dynamic>? arguments,
+    B? blocValue,
+    List<BlocProviderSingleChildWidget>? blocProviders,
     Transition? transition,
     Curve? curve,
     Duration? duration,
   }) =>
-      (currentNavigator ?? Navigator.of(context)).replaceAllWithPage(
-        page,
-        predicate: predicate,
-        arguments: arguments,
-        transition: transition,
-        curve: curve,
-        duration: duration,
-      );
+          (currentNavigator ?? Navigator.of(context)).replaceAllWithPage(
+            page,
+            predicate: predicate,
+            arguments: arguments,
+            transition: transition,
+            curve: curve,
+            duration: duration,
+          );
 
   static void back<T>(
     BuildContext context, {
@@ -216,6 +219,25 @@ class AppRouter {
 
   static void backToPage(BuildContext context, AppPages page) =>
       backToPageName(context, page.name);
+}
+
+PageBuilder _resolvePageBuilder<B extends BlocBase<Object?>>({
+  required PageBuilder pageBuilder,
+  B? blocValue,
+  List<BlocProviderSingleChildWidget>? blocProviders,
+}) {
+  if (blocValue != null)
+    return () => BlocProvider.value(
+          value: blocValue,
+          child: (() => pageBuilder())(),
+        );
+  else if (blocProviders != null)
+    return () => MultiBlocProvider(
+          providers: blocProviders,
+          child: (() => pageBuilder())(),
+        );
+  else
+    return pageBuilder;
 }
 
 extension NavigatorStateExtension on NavigatorState {
@@ -248,24 +270,13 @@ extension NavigatorStateExtension on NavigatorState {
         widget.pages.last.name == page.name)
       throw StateError(_duplicatedPage(page.name));
 
-    late PageBuilder pageBuilder;
-
-    if (blocValue != null)
-      pageBuilder = () => BlocProvider.value(
-            value: blocValue,
-            child: (() => pageConfig.pageBuilder())(),
-          );
-    else if (blocProviders != null)
-      pageBuilder = () => MultiBlocProvider(
-            providers: blocProviders,
-            child: (() => pageConfig.pageBuilder())(),
-          );
-    else
-      pageBuilder = pageConfig.pageBuilder;
-
     return push<T>(
       _createRoute(
-        pageBuilder: pageBuilder,
+        pageBuilder: _resolvePageBuilder(
+          pageBuilder: pageConfig.pageBuilder,
+          blocValue: blocValue,
+          blocProviders: blocProviders,
+        ),
         settings: RouteSettings(name: page.name, arguments: arguments),
         transition: transition ?? pageConfig.transition,
         transitionDuration: duration ?? pageConfig.transitionDuration,
@@ -278,10 +289,13 @@ extension NavigatorStateExtension on NavigatorState {
 
   /// [duration]
   /// The duration the transition going forwards.
-  Future<T?>? replaceAllWithPage<T>(
+  Future<T?>?
+      replaceAllWithPage<T extends Object?, B extends BlocBase<Object?>>(
     AppPages page, {
     bool Function(Route<dynamic>)? predicate,
     Map<String, dynamic>? arguments,
+    B? blocValue,
+    List<BlocProviderSingleChildWidget>? blocProviders,
     Transition? transition,
     Curve? curve,
     Duration? duration,
@@ -291,7 +305,11 @@ extension NavigatorStateExtension on NavigatorState {
 
     return pushAndRemoveUntil(
       _createRoute(
-        pageBuilder: pageConfig.pageBuilder,
+        pageBuilder: _resolvePageBuilder(
+          pageBuilder: pageConfig.pageBuilder,
+          blocValue: blocValue,
+          blocProviders: blocProviders,
+        ),
         settings: RouteSettings(name: page.name, arguments: arguments),
         transition: transition ?? pageConfig.transition,
         transitionDuration: duration ?? pageConfig.transitionDuration,
