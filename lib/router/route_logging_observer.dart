@@ -15,6 +15,8 @@ class RouteLoggingObserver extends RouteObserver<PageRoute<dynamic>> {
                   e.key.toString(),
                   if (e.value is Function)
                     objectRuntimeType(e.value, '')
+                  else if (e.value is List)
+                    "${e.value.runtimeType} (${(e.value as List).length}) ${e.value}"
                   else
                     e.value.toString(),
                 ].join('='),
