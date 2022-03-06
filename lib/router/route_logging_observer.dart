@@ -3,6 +3,41 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class RouteLoggingObserver extends RouteObserver<PageRoute<dynamic>> {
+  late final RegExp _dynamicWordRegex = RegExp(r'\bdynamic\b');
+
+  String _getStringRepresentationOfListItems(List list) {
+    if (list.isEmpty) return '[]';
+
+    if (list is List<num> ||
+        list is List<bool> ||
+        list is List<String> ||
+        list is List<Map> ||
+        list is List<Set> ||
+        list is List<Symbol> ||
+        list is List<BigInt>) {
+      return list.toString();
+    }
+
+    final String firstItemRuntimeType = list[0].runtimeType.toString();
+    final String listRuntimeType = list.runtimeType.toString();
+
+    final String startString = "[Instance of '$firstItemRuntimeType'";
+
+    final bool didItemNotOverrideToString =
+        list.toString().startsWith(startString);
+
+    final isDynamicList = listRuntimeType.contains(_dynamicWordRegex);
+
+    late final isSingleItemTypeList =
+        listRuntimeType.contains(RegExp("\\b$firstItemRuntimeType\\b"));
+
+    if (didItemNotOverrideToString && (isDynamicList || isSingleItemTypeList)) {
+      return "[$startString, ...]";
+    }
+
+    return list.toString();
+  }
+
   String _resolveArguments(Object? args) {
     if (args == null) return '';
 
@@ -16,7 +51,11 @@ class RouteLoggingObserver extends RouteObserver<PageRoute<dynamic>> {
                   if (e.value is Function)
                     objectRuntimeType(e.value, '')
                   else if (e.value is List)
-                    "${e.value.runtimeType} (${(e.value as List).length}) ${e.value}"
+                    [
+                      e.value.runtimeType,
+                      "(${e.value.length})",
+                      _getStringRepresentationOfListItems(e.value as List),
+                    ].join(' ')
                   else
                     e.value.toString(),
                 ].join('='),
