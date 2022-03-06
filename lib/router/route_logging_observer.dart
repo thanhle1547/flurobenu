@@ -23,16 +23,16 @@ class RouteLoggingObserver extends RouteObserver<PageRoute<dynamic>> {
 
     final String startString = "[Instance of '$firstItemRuntimeType'";
 
-    final bool didItemNotOverrideToString =
-        list.toString().startsWith(startString);
-
     final isDynamicList = listRuntimeType.contains(_dynamicWordRegex);
+
+    final bool didItemNotOverrideToString =
+        (isDynamicList ? list : [list[0]]).toString().startsWith(startString);
 
     late final isSingleItemTypeList =
         listRuntimeType.contains(RegExp("\\b$firstItemRuntimeType\\b"));
 
     if (didItemNotOverrideToString && (isDynamicList || isSingleItemTypeList)) {
-      return "[$startString, ...]";
+      return "$startString, ...]";
     }
 
     return list.toString();
