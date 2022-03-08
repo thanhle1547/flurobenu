@@ -125,7 +125,7 @@ class AppRouter {
       return _navigatorKey!.currentState!;
     } catch (e) {
       throw StateError(
-        "${e.toString()}. May be you did not create Navigator key",
+        "${e.toString()}. Maybe you did not create Navigator key",
       );
     }
   }
