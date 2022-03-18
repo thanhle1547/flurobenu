@@ -139,6 +139,10 @@ class AppRouter {
   static Route<dynamic>? onUnknownRoute(RouteSettings settings) =>
       _createRouteFromName(settings.name);
 
+  /// https://docs.flutter.dev/cookbook/navigation/navigate-with-arguments#2-create-a-widget-that-extracts-the-arguments
+  static Object? extractArguments(BuildContext context) =>
+      ModalRoute.of(context)?.settings.arguments;
+
   /// * [duration]
   /// The duration the transition going forwards.
   ///
