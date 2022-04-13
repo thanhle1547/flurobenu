@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 class RouteLoggingObserver extends RouteObserver<PageRoute<dynamic>> {
   late final RegExp _dynamicWordRegex = RegExp(r'\bdynamic\b');
 
+  String _objectRuntimeType(Object? object) => objectRuntimeType(object, '');
+
   String _getStringRepresentationOfListItems(List list) {
     if (list.isEmpty) return '[]';
 
@@ -18,8 +20,8 @@ class RouteLoggingObserver extends RouteObserver<PageRoute<dynamic>> {
       return list.toString();
     }
 
-    final String firstItemRuntimeType = list[0].runtimeType.toString();
-    final String listRuntimeType = list.runtimeType.toString();
+    final String firstItemRuntimeType = _objectRuntimeType(list[0]);
+    final String listRuntimeType = _objectRuntimeType(list);
 
     final String startString = "[Instance of '$firstItemRuntimeType'";
 
@@ -49,10 +51,10 @@ class RouteLoggingObserver extends RouteObserver<PageRoute<dynamic>> {
                 (e) => [
                   e.key.toString(),
                   if (e.value is Function)
-                    objectRuntimeType(e.value, '')
+                    _objectRuntimeType(e.value)
                   else if (e.value is List)
                     [
-                      e.value.runtimeType,
+                      _objectRuntimeType(e.value),
                       "(${e.value.length})",
                       _getStringRepresentationOfListItems(e.value as List),
                     ].join(' ')
