@@ -55,7 +55,7 @@ class RouteLoggingObserver extends RouteObserver<PageRoute<dynamic>> {
                   else if (e.value is List)
                     [
                       _objectRuntimeType(e.value),
-                      "(${e.value.length})",
+                      "(${e.value.length} item${e.value.length == 1 ? '' : 's'})",
                       _getStringRepresentationOfListItems(e.value as List),
                     ].join(' ')
                   else
