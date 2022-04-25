@@ -177,6 +177,8 @@ class AppRouter {
         fullscreenDialog: fullscreenDialog,
       );
 
+  /// * [duration]
+  /// The duration the transition going forwards.
   static Future<T?>?
       replaceWithPage<T extends Object?, B extends BlocBase<Object?>>(
     BuildContext context,
