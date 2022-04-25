@@ -195,6 +195,8 @@ class AppRouter {
             page,
             predicate: predicate,
             arguments: arguments,
+            blocValue: blocValue,
+            blocProviders: blocProviders,
             transition: transition,
             curve: curve,
             duration: duration,
