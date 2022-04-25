@@ -232,6 +232,89 @@ class AppRouter {
       backToPageName(context, page.name);
 }
 
+extension FlurobenuExtension on BuildContext {
+  /// * [duration]
+  /// The duration the transition going forwards.
+  ///
+  /// * [opaque]
+  ///
+  /// {@macro flutter.widgets.TransitionRoute.opaque}
+  ///
+  /// * [fullscreenDialog]
+  ///
+  /// {@macro flutter.widgets.PageRoute.fullscreenDialog}
+  Future<T?> toPage<T extends Object?, B extends BlocBase<Object?>>(
+    AppPages page, {
+    Map<String, dynamic>? arguments,
+    B? blocValue,
+    List<BlocProviderSingleChildWidget>? blocProviders,
+    Transition? transition,
+    Curve? curve,
+    Duration? duration,
+    bool? opaque,
+    bool? fullscreenDialog,
+  }) =>
+      Navigator.of(this).toPage(
+        page,
+        arguments: arguments,
+        blocValue: blocValue,
+        blocProviders: blocProviders,
+        transition: transition,
+        curve: curve,
+        duration: duration,
+        opaque: opaque,
+        fullscreenDialog: fullscreenDialog,
+      );
+
+  /// * [duration]
+  /// The duration the transition going forwards.
+  Future<T?>? replaceWithPage<T extends Object?, B extends BlocBase<Object?>>(
+    AppPages page, {
+    bool Function(Route<dynamic>)? predicate,
+    Map<String, dynamic>? arguments,
+    B? blocValue,
+    List<BlocProviderSingleChildWidget>? blocProviders,
+    Transition? transition,
+    Curve? curve,
+    Duration? duration,
+  }) =>
+      Navigator.of(this).replaceWithPage(
+        page,
+        arguments: arguments,
+        transition: transition,
+        curve: curve,
+        duration: duration,
+      );
+
+  /// * [duration]
+  /// The duration the transition going forwards.
+  Future<T?>?
+      replaceAllWithPage<T extends Object?, B extends BlocBase<Object?>>(
+    AppPages page, {
+    bool Function(Route<dynamic>)? predicate,
+    Map<String, dynamic>? arguments,
+    B? blocValue,
+    List<BlocProviderSingleChildWidget>? blocProviders,
+    Transition? transition,
+    Curve? curve,
+    Duration? duration,
+  }) =>
+          Navigator.of(this).replaceAllWithPage(
+            page,
+            predicate: predicate,
+            arguments: arguments,
+            transition: transition,
+            curve: curve,
+            duration: duration,
+          );
+
+  void back<T>({T? result}) => Navigator.of(this).back(result: result);
+
+  void backToPageName(String name) => Navigator.of(this).backToPageName(name);
+
+  void backToPage(AppPages page) => backToPageName(page.name);
+}
+
 /// throw StateError when you pushed the same page to the stack
 Never _duplicatedPage(String name) =>
     throw StateError("Duplicated Page: $name");
