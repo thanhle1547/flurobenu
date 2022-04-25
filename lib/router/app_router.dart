@@ -237,6 +237,9 @@ class AppRouter {
 }
 
 extension FlurobenuExtension on BuildContext {
+  /// https://docs.flutter.dev/cookbook/navigation/navigate-with-arguments#2-create-a-widget-that-extracts-the-arguments
+  Object? extractArguments() => ModalRoute.of(this)?.settings.arguments;
+
   /// * [duration]
   /// The duration the transition going forwards.
   ///
