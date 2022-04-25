@@ -191,6 +191,8 @@ class AppRouter {
           (currentNavigator ?? Navigator.of(context)).replaceWithPage(
             page,
             arguments: arguments,
+            blocValue: blocValue,
+            blocProviders: blocProviders,
             transition: transition,
             curve: curve,
             duration: duration,
@@ -270,7 +272,6 @@ extension FlurobenuExtension on BuildContext {
   /// The duration the transition going forwards.
   Future<T?>? replaceWithPage<T extends Object?, B extends BlocBase<Object?>>(
     AppPages page, {
-    bool Function(Route<dynamic>)? predicate,
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
@@ -281,6 +282,8 @@ extension FlurobenuExtension on BuildContext {
       Navigator.of(this).replaceWithPage(
         page,
         arguments: arguments,
+        blocValue: blocValue,
+        blocProviders: blocProviders,
         transition: transition,
         curve: curve,
         duration: duration,
@@ -394,7 +397,6 @@ extension NavigatorStateExtension on NavigatorState {
   /// The duration the transition going forwards.
   Future<T?>? replaceWithPage<T extends Object?, B extends BlocBase<Object?>>(
     AppPages page, {
-    bool Function(Route<dynamic>)? predicate,
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
