@@ -177,6 +177,25 @@ class AppRouter {
         fullscreenDialog: fullscreenDialog,
       );
 
+  static Future<T?>?
+      replaceWithPage<T extends Object?, B extends BlocBase<Object?>>(
+    BuildContext context,
+    AppPages page, {
+    Map<String, dynamic>? arguments,
+    B? blocValue,
+    List<BlocProviderSingleChildWidget>? blocProviders,
+    Transition? transition,
+    Curve? curve,
+    Duration? duration,
+  }) =>
+          (currentNavigator ?? Navigator.of(context)).replaceWithPage(
+            page,
+            arguments: arguments,
+            transition: transition,
+            curve: curve,
+            duration: duration,
+          );
+
   /// * [duration]
   /// The duration the transition going forwards.
   static Future<T?>?
@@ -284,6 +303,38 @@ extension NavigatorStateExtension on NavigatorState {
         curve: curve ?? pageConfig.curve,
         opaque: opaque ?? pageConfig.opaque,
         fullscreenDialog: fullscreenDialog ?? pageConfig.fullscreenDialog,
+      ),
+    );
+  }
+
+  /// * [duration]
+  /// The duration the transition going forwards.
+  Future<T?>? replaceWithPage<T extends Object?, B extends BlocBase<Object?>>(
+    AppPages page, {
+    bool Function(Route<dynamic>)? predicate,
+    Map<String, dynamic>? arguments,
+    B? blocValue,
+    List<BlocProviderSingleChildWidget>? blocProviders,
+    Transition? transition,
+    Curve? curve,
+    Duration? duration,
+  }) {
+    final PageConfig pageConfig =
+        AppPagesExtension.getPageConfig(page, arguments);
+
+    return pushReplacement(
+      _createRoute(
+        pageBuilder: _resolvePageBuilder(
+          pageBuilder: pageConfig.pageBuilder,
+          blocValue: blocValue,
+          blocProviders: blocProviders,
+        ),
+        settings: RouteSettings(name: page.name, arguments: arguments),
+        transition: transition ?? pageConfig.transition,
+        transitionDuration: duration ?? pageConfig.transitionDuration,
+        curve: curve ?? pageConfig.curve,
+        opaque: pageConfig.opaque,
+        fullscreenDialog: pageConfig.fullscreenDialog,
       ),
     );
   }
