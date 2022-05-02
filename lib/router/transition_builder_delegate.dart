@@ -1,5 +1,4 @@
 // ignore_for_file: require_trailing_commas
-
 import 'package:flutter/material.dart';
 
 abstract class TransitionBuilderDelegate {
@@ -24,6 +23,14 @@ extension on Animatable {
     if (curve == null) return this as Animatable<T>;
 
     return chain(CurveTween(curve: curve)) as Animatable<T>;
+  }
+}
+
+extension on Animation<double> {
+  Animation<double> resolveWith({Curve? curve}) {
+    if (curve == null) return this;
+
+    return CurvedAnimation(parent: this, curve: curve);
   }
 }
 
@@ -55,11 +62,8 @@ class FadeInTransition extends TransitionBuilderDelegate {
     Curve? curve,
     Widget child,
   ) {
-    final CurvedAnimation? curvedAnimation =
-        curve == null ? null : CurvedAnimation(parent: animation, curve: curve);
-
     return FadeTransition(
-      opacity: curvedAnimation ?? animation,
+      opacity: animation.resolveWith(curve: curve),
       child: child,
     );
   }
@@ -156,13 +160,10 @@ class OpenUpwardsTransition extends TransitionBuilderDelegate {
     Curve? curve,
     Widget child,
   ) {
-    final CurvedAnimation? curvedAnimation =
-        curve == null ? null : CurvedAnimation(parent: animation, curve: curve);
-
     return const OpenUpwardsPageTransitionsBuilder().buildTransitions(
       route,
       context,
-      curvedAnimation ?? animation,
+      animation.resolveWith(curve: curve),
       secondaryAnimation,
       child,
     );
@@ -181,13 +182,10 @@ class FadeUpwardsTransition extends TransitionBuilderDelegate {
     Curve? curve,
     Widget child,
   ) {
-    final CurvedAnimation? curvedAnimation =
-        curve == null ? null : CurvedAnimation(parent: animation, curve: curve);
-
     return const FadeUpwardsPageTransitionsBuilder().buildTransitions(
       route,
       context,
-      curvedAnimation ?? animation,
+      animation.resolveWith(curve: curve),
       secondaryAnimation,
       child,
     );
