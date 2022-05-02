@@ -34,6 +34,14 @@ class PostPublishedScreen extends StatelessWidget {
     }
   }
 
+  void _fabPressedHandler(BuildContext context) {
+    if (navigateMode == NavigateMode.withoutContext) {
+      AppRouter.navigator.toPage(AppPages.Post_Suggest);
+    } else {
+      AppRouter.toPage(context, AppPages.Post_Suggest);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,6 +101,10 @@ class PostPublishedScreen extends StatelessWidget {
             ),
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _fabPressedHandler(context),
+        child: const Icon(Icons.undo_rounded),
       ),
     );
   }

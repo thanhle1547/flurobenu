@@ -1,11 +1,18 @@
 import 'package:flurobenu/navigate_mode.dart';
-import 'package:flurobenu/router/app_pages.dart';
 import 'package:flurobenu/router/app_router.dart';
 import 'package:flurobenu/router/route_logging_observer.dart';
 import 'package:flutter/material.dart';
 
+import 'router/app_pages.dart';
+import 'router/routes.dart';
+
 void main() {
   navigateMode = NavigateMode.withoutContext;
+  AppRouter.setDefaultConfig(
+    initialPage: AppPages.Initial,
+    routes: routes,
+    routeNameBuilder: (page) => (page as AppPages).name,
+  );
   runApp(const MyApp());
 }
 

@@ -1,86 +1,34 @@
+// ignore_for_file: require_trailing_commas
+
+import 'dart:collection';
+import 'dart:developer';
+
+import 'package:flurobenu/router/transition_builder_delegate.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart'
+    show BlocBase, BlocProvider, MultiBlocProvider;
 // ignore: implementation_imports
 import 'package:flutter_bloc/src/bloc_provider.dart'
     show BlocProviderSingleChildWidget;
 
 import 'app_pages.dart';
-import 'page_config.dart';
+import 'argument_error.dart';
+import 'route_config.dart';
+import 'transition.dart';
 
-enum Transition {
-  fadeIn,
-  rightToLeft,
-  downToUp,
-  rightToLeftWithFade,
-}
+typedef PageBuilder = Widget Function();
 
-extension _TransitionExtension on Transition {
-  Offset? get beginOffset {
-    switch (this) {
-      case Transition.rightToLeft:
-      case Transition.rightToLeftWithFade:
-        return const Offset(1.0, 0.0);
-      case Transition.downToUp:
-        return const Offset(0.0, 1.0);
-      default:
-        return null;
-    }
-  }
-
-  static Widget builder(
-    BuildContext context,
-    Animation<double> animation,
-    Animation<double> secondaryAnimation,
-    Transition transition,
-    Curve? curve,
-    Widget child,
-  ) {
-    const zeroOffset = Offset.zero;
-
-    if (transition == Transition.rightToLeftWithFade) {
-      return SlideTransition(
-        position: Tween<Offset>(
-          begin: transition.beginOffset,
-          end: zeroOffset,
-        ).animate(animation),
-        child: FadeTransition(
-          opacity: animation,
-          child: child,
-        ),
-      );
-    }
-
-    late CurvedAnimation? curvedAnimation =
-        curve == null ? null : CurvedAnimation(parent: animation, curve: curve);
-
-    if (transition == Transition.fadeIn)
-      return FadeTransition(
-        opacity: curvedAnimation ?? animation,
-        child: child,
-      );
-
-    final tween = Tween(begin: transition.beginOffset, end: zeroOffset);
-    curvedAnimation ??= CurvedAnimation(
-      parent: animation,
-      curve: _defaultTransitionCurve,
-    );
-
-    return SlideTransition(
-      position: tween.animate(curvedAnimation),
-      child: child,
-    );
-  }
-}
-
-final String _initialPageName = AppPages.Initial.name;
-const Transition _defaultTransition = Transition.rightToLeft;
-const Curve _defaultTransitionCurve = Curves.easeOutQuad;
-const Duration _defaultTransitionDuration = Duration(milliseconds: 320);
+dynamic _initialPage;
+Transition? _defaultTransition;
+Curve? _defaultTransitionCurve;
+Duration? _defaultTransitionDuration;
+bool _shouldPreventDuplicates = true;
 
 PageRouteBuilder<T> _createRoute<T>({
   required PageBuilder pageBuilder,
   required RouteSettings settings,
-  Transition? transition,
+  TransitionBuilderDelegate? transitionBuilderDelegate,
   Duration? transitionDuration,
   Curve? curve,
   bool opaque = true,
@@ -89,31 +37,192 @@ PageRouteBuilder<T> _createRoute<T>({
     PageRouteBuilder<T>(
       pageBuilder: (_, __, ___) => pageBuilder(),
       settings: settings,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-          _TransitionExtension.builder(
-        context,
-        animation,
-        secondaryAnimation,
-        transition ?? _defaultTransition,
-        curve,
-        child,
-      ),
-      transitionDuration: transitionDuration ?? _defaultTransitionDuration,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final builder = transitionBuilderDelegate ??
+            _defaultTransition?.builder ??
+            Transition.none.builder;
+
+        return builder.buildTransition(
+          context,
+          animation,
+          secondaryAnimation,
+          curve ?? _defaultTransitionCurve,
+          child,
+        );
+      },
+      transitionDuration: transitionDuration ??
+          _defaultTransitionDuration ??
+          const Duration(milliseconds: 300),
       opaque: opaque,
       fullscreenDialog: fullscreenDialog,
     );
 
 PageRouteBuilder _createRouteFromName(String? name) {
-  final PageConfig pageConfig =
-      AppPagesExtension.getPageConfigForUnknownRouteName(name);
+  final key = _routes.keys.firstWhere(
+    (e) => _effectiveRouteNameBuilder(e) == name,
+    orElse: () => _initialPage,
+  );
+
+  if (key == null) throw StateError("$name not found");
+
+  final RouteConfig config = _routes[key]!;
 
   return _createRoute(
-    pageBuilder: pageConfig.pageBuilder,
+    pageBuilder: () => config.pageBuilder(null),
     settings: RouteSettings(name: name),
+    transitionBuilderDelegate:
+        config.transition?.builder ?? config.customTransitionBuilderDelegate,
   );
 }
 
+List<Type> _routeTypes = [];
+bool get _shouldCheckRouteType => _routeTypes.isNotEmpty;
+
+void _checkRouteType(dynamic page) {
+  if (_shouldCheckRouteType && !_routeTypes.contains(page.runtimeType))
+    throw ArgumentError(
+      "Route types did not contain type ${page.runtimeType} ($page)",
+    );
+}
+
+String Function(dynamic page)? _routeNameBuilder;
+
+String Function(dynamic page) get _effectiveRouteNameBuilder =>
+    _routeNameBuilder ?? (page) => page.toString();
+
+Map<dynamic, RouteConfig> _routes = HashMap(
+  equals: (key0, key1) => key0 == key1,
+  hashCode: (key) => key.hashCode,
+);
+
 class AppRouter {
+  static String Function(dynamic page)? pageKeyBuilder;
+
+  static void setDefaultConfig({
+    List<Type>? routeTypes,
+    Map<dynamic, RouteConfig>? routes,
+    required dynamic initialPage,
+    String Function(dynamic page)? routeNameBuilder,
+    String Function(dynamic page)? pageKeyBuilder,
+    Transition? transition = Transition.rightToLeft,
+    Curve? transitionCurve = Curves.easeOutQuad,
+    Duration? transitionDuration = const Duration(milliseconds: 320),
+    bool preventDuplicates = true,
+  }) {
+    if (routeTypes != null) _routeTypes = routeTypes;
+    if (routes != null) _routes.addAll(routes);
+    _initialPage = initialPage;
+    _routeNameBuilder = routeNameBuilder;
+    AppRouter.pageKeyBuilder = pageKeyBuilder;
+    _defaultTransition = transition;
+    _defaultTransitionCurve = transitionCurve;
+    _defaultTransitionDuration = transitionDuration;
+    _shouldPreventDuplicates = preventDuplicates;
+  }
+
+  // ignore: avoid_setters_without_getters
+  static set routeTypes(List<Type> routes) => _routeTypes = routes;
+
+  /// * [requiredArguments] If used, [AppRouter] will check this before navigate
+  ///
+  /// For example:
+  /// ```
+  /// AppRouter.define(
+  ///   page: AppPages.home,
+  ///   requiredArgumentNames: ['id', 'name'],
+  ///   pageBuilder: (args) {
+  ///     // ...
+  ///   },
+  /// );
+  /// ```
+  ///
+  /// * [requiredArguments] If used, [AppRouter] will check this before navigate
+  ///
+  /// For example:
+  /// ```
+  /// AppRouter.define(
+  ///   page: AppPages.home,
+  ///   requiredArgument: {
+  ///     'id': int,
+  ///     'name': String,
+  ///   },
+  ///   pageBuilder: (args) {
+  ///     // ...
+  ///   },
+  /// );
+  /// ```
+  ///
+  /// * [requiredArgumentType] If used, [AppRouter] will check this before navigate
+  ///
+  /// For example:
+  /// ```
+  /// AppRouter.define(
+  ///   page: AppPages.home,
+  ///   requiredArgumentType: ScreenArgument,
+  ///   pageBuilder: (args) {
+  ///     // ...
+  ///   },
+  /// );
+  /// ```
+  void define({
+    dynamic page,
+    List<String>? requiredArgumentNames,
+    Map<String, Type>? requiredArguments,
+    Type? requiredArgumentType,
+    Transition? transition,
+    Duration? transitionDuration,
+    Curve? curve,
+    bool opaque = true,
+    bool fullscreenDialog = false,
+    bool? preventDuplicates,
+    required Widget Function(Map<String, dynamic>? arguments) pageBuilder,
+  }) {
+    _checkRouteType(page);
+
+    _routes.putIfAbsent(
+      page,
+      () => RouteConfig(
+        pageBuilder: pageBuilder,
+        transition: transition,
+        transitionDuration: transitionDuration,
+        curve: curve,
+        opaque: opaque,
+        fullscreenDialog: fullscreenDialog,
+        requiredArgumentNames: requiredArgumentNames,
+        requiredArguments: requiredArguments,
+        // requiredArgumentType: requiredArgumentType,
+        preventDuplicates: preventDuplicates,
+      ),
+    );
+  }
+
+  void defineGroup({
+    required List<dynamic> pages,
+    List<String>? requiredArgumentNames,
+    Map<String, Type>? requiredArguments,
+    Type? requiredArgumentType,
+    Transition? transition,
+    Duration? transitionDuration,
+    Curve? curve,
+    bool opaque = true,
+    bool fullscreenDialog = false,
+    bool? preventDuplicates,
+    required Widget Function(Map<String, dynamic>? arguments) pageBuilder,
+  }) =>
+      define(
+        page: pages,
+        requiredArgumentNames: requiredArgumentNames,
+        requiredArguments: requiredArguments,
+        requiredArgumentType: requiredArgumentType,
+        transition: transition,
+        transitionDuration: transitionDuration,
+        curve: curve,
+        opaque: opaque,
+        fullscreenDialog: fullscreenDialog,
+        pageBuilder: pageBuilder,
+        preventDuplicates: preventDuplicates,
+      );
+
   static GlobalKey<NavigatorState>? _navigatorKey;
 
   static GlobalKey<NavigatorState> createNavigatorKeyIfNotExisted() =>
@@ -155,11 +264,12 @@ class AppRouter {
   /// {@macro flutter.widgets.PageRoute.fullscreenDialog}
   static Future<T?> toPage<T extends Object?, B extends BlocBase<Object?>>(
     BuildContext context,
-    AppPages page, {
+    dynamic page, {
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
     Transition? transition,
+    TransitionBuilderDelegate? customTransitionBuilderDelegate,
     Curve? curve,
     Duration? duration,
     bool? opaque,
@@ -171,6 +281,7 @@ class AppRouter {
         blocValue: blocValue,
         blocProviders: blocProviders,
         transition: transition,
+        customTransitionBuilderDelegate: customTransitionBuilderDelegate,
         curve: curve,
         duration: duration,
         opaque: opaque,
@@ -182,7 +293,7 @@ class AppRouter {
   static Future<T?>?
       replaceWithPage<T extends Object?, B extends BlocBase<Object?>>(
     BuildContext context,
-    AppPages page, {
+    dynamic page, {
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
@@ -205,12 +316,13 @@ class AppRouter {
   static Future<T?>?
       replaceAllWithPage<T extends Object?, B extends BlocBase<Object?>>(
     BuildContext context,
-    AppPages page, {
+    dynamic page, {
     bool Function(Route<dynamic>)? predicate,
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
     Transition? transition,
+    TransitionBuilderDelegate? customTransitionBuilderDelegate,
     Curve? curve,
     Duration? duration,
   }) =>
@@ -221,6 +333,7 @@ class AppRouter {
             blocValue: blocValue,
             blocProviders: blocProviders,
             transition: transition,
+            customTransitionBuilderDelegate: customTransitionBuilderDelegate,
             curve: curve,
             duration: duration,
           );
@@ -253,7 +366,7 @@ extension FlurobenuExtension on BuildContext {
   ///
   /// {@macro flutter.widgets.PageRoute.fullscreenDialog}
   Future<T?> toPage<T extends Object?, B extends BlocBase<Object?>>(
-    AppPages page, {
+    dynamic page, {
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
@@ -278,7 +391,7 @@ extension FlurobenuExtension on BuildContext {
   /// * [duration]
   /// The duration the transition going forwards.
   Future<T?>? replaceWithPage<T extends Object?, B extends BlocBase<Object?>>(
-    AppPages page, {
+    dynamic page, {
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
@@ -300,7 +413,7 @@ extension FlurobenuExtension on BuildContext {
   /// The duration the transition going forwards.
   Future<T?>?
       replaceAllWithPage<T extends Object?, B extends BlocBase<Object?>>(
-    AppPages page, {
+    dynamic page, {
     bool Function(Route<dynamic>)? predicate,
     Map<String, dynamic>? arguments,
     B? blocValue,
@@ -327,19 +440,27 @@ extension FlurobenuExtension on BuildContext {
   void backToPage(AppPages page) => backToPageName(page.name);
 }
 
-/// throw StateError when you pushed the same page to the stack
-Never _duplicatedPage(String name) =>
-    throw StateError("Duplicated Page: $name");
+void _logAndThrowError(Object e) {
+  if (kDebugMode) {
+    log(e.toString(), name: 'Flurobenu');
+  }
 
-PageBuilder _resolvePageBuilder<B extends BlocBase<Object?>>({
+  throw e;
+}
+
+/// throw StateError when you pushed the same page to the stack
+void _duplicatedPage(String name) =>
+    _logAndThrowError(StateError("Duplicated Page: $name"));
+
+PageBuilder _resolvePageBuilderWithBloc<B extends BlocBase<Object?>>({
   required PageBuilder pageBuilder,
   B? blocValue,
   List<BlocProviderSingleChildWidget>? blocProviders,
 }) {
   if (blocValue != null && blocProviders != null)
-    throw ArgumentError(
+    _logAndThrowError(ArgumentError(
       'Do not pass value to [blocValue] & [blocProviders] at the same time.',
-    );
+    ));
 
   if (blocValue != null)
     return () => BlocProvider.value(
@@ -356,6 +477,91 @@ PageBuilder _resolvePageBuilder<B extends BlocBase<Object?>>({
   return pageBuilder;
 }
 
+RouteConfig _getRouteConfig(dynamic page) {
+  try {
+    final dynamic key = _routes.keys.firstWhere(
+      (e) {
+        if (e is List) return e.contains(page);
+
+        return e == page;
+      },
+      orElse: () => null,
+    );
+
+    if (key == null) throw "$page weren't defined";
+
+    return _routes[key]!;
+  } catch (e) {
+    print(e);
+
+    rethrow;
+  }
+}
+
+Widget Function() _getPageBuilder<T extends Object?>(
+  RouteConfig routeConfig,
+  dynamic argument,
+  Map<String, dynamic>? arguments,
+) {
+  if (routeConfig.requiredArgumentNames != null) {
+    if (arguments == null) {
+      _logAndThrowError(MissingArgument(
+        routeConfig.requiredArgumentNames.toString(),
+      ));
+    }
+
+    for (final String name in routeConfig.requiredArgumentNames!) {
+      if (!arguments!.containsKey(name))
+        _logAndThrowError(MissingArgument(name));
+    }
+  }
+
+  if (routeConfig.requiredArguments != null) {
+    if (arguments == null) {
+      _logAndThrowError(MissingArgument(
+        routeConfig.requiredArguments.toString(),
+      ));
+    } else {
+      for (final entry in routeConfig.requiredArguments!.entries) {
+        if (!arguments.containsKey(entry.key)) {
+          _logAndThrowError(MissingArgument(entry.key, entry.value));
+        } else if (arguments[entry.key].runtimeType != entry.value) {
+          _logAndThrowError(ArgumentTypeError(
+            entry.value,
+            arguments[entry.key].runtimeType,
+            "'${entry.key}'",
+          ));
+        }
+      }
+    }
+  }
+
+  /*
+  else if (routeConfig.requiredArgumentType != null) {
+    if (argument != null && argument != routeConfig.requiredArgumentType) {
+      throw ArgumentTypeError(
+        routeConfig.requiredArgumentType!,
+        argument.runtimeType,
+      );
+    } else if (arguments != null) {
+      for (final entry in routeConfig.requiredArguments!.entries) {
+        if (!arguments.containsKey(entry.key))
+          throw MissingArgument(entry.key, entry.value);
+        else if (arguments[entry.key].runtimeType != entry.value) {
+          throw ArgumentTypeError(
+            entry.value,
+            arguments[entry.key].runtimeType,
+            "'${entry.key}'",
+          );
+        }
+      }
+    }
+  }
+  */
+
+  return () => routeConfig.pageBuilder(arguments);
+}
+
 extension NavigatorStateExtension on NavigatorState {
   /// * [duration]
   /// The duration the transition going forwards.
@@ -368,36 +574,54 @@ extension NavigatorStateExtension on NavigatorState {
   ///
   /// {@macro flutter.widgets.PageRoute.fullscreenDialog}
   Future<T?> toPage<T extends Object?, B extends BlocBase<Object?>>(
-    AppPages page, {
+    dynamic page, {
+    dynamic argument,
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
     Transition? transition,
+    TransitionBuilderDelegate? customTransitionBuilderDelegate,
     Curve? curve,
+    bool? preventDuplicates,
     Duration? duration,
     bool? opaque,
     bool? fullscreenDialog,
   }) {
-    final PageConfig pageConfig =
-        AppPagesExtension.getPageConfig(page, arguments);
+    _checkRouteType(page);
 
-    if (pageConfig.preventDuplicates &&
+    final RouteConfig routeConfig = _getRouteConfig(page);
+
+    // if (requiredArgumentNames != null)
+
+    if ((preventDuplicates ?? _shouldPreventDuplicates) &&
         widget.pages.isNotEmpty &&
-        widget.pages.last.name == page.name) _duplicatedPage(page.name);
+        widget.pages.last.name == page.name) {
+      _duplicatedPage(page.name.runtimeType.toString());
+    }
 
     return push<T>(
       _createRoute(
-        pageBuilder: _resolvePageBuilder(
-          pageBuilder: pageConfig.pageBuilder,
+        pageBuilder: _resolvePageBuilderWithBloc(
+          pageBuilder: _getPageBuilder(
+            routeConfig,
+            argument,
+            arguments,
+          ),
           blocValue: blocValue,
           blocProviders: blocProviders,
         ),
-        settings: RouteSettings(name: page.name, arguments: arguments),
-        transition: transition ?? pageConfig.transition,
-        transitionDuration: duration ?? pageConfig.transitionDuration,
-        curve: curve ?? pageConfig.curve,
-        opaque: opaque ?? pageConfig.opaque,
-        fullscreenDialog: fullscreenDialog ?? pageConfig.fullscreenDialog,
+        settings: RouteSettings(
+          name: _effectiveRouteNameBuilder(page),
+          arguments: arguments,
+        ),
+        transitionBuilderDelegate:
+            (transition ?? routeConfig.transition)?.builder ??
+                customTransitionBuilderDelegate ??
+                routeConfig.customTransitionBuilderDelegate,
+        transitionDuration: duration ?? routeConfig.transitionDuration,
+        curve: curve ?? routeConfig.curve,
+        opaque: opaque ?? routeConfig.opaque,
+        fullscreenDialog: fullscreenDialog ?? routeConfig.fullscreenDialog,
       ),
     );
   }
@@ -405,30 +629,43 @@ extension NavigatorStateExtension on NavigatorState {
   /// * [duration]
   /// The duration the transition going forwards.
   Future<T?>? replaceWithPage<T extends Object?, B extends BlocBase<Object?>>(
-    AppPages page, {
+    dynamic page, {
+    dynamic argument,
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
     Transition? transition,
+    TransitionBuilderDelegate? customTransitionBuilderDelegate,
     Curve? curve,
     Duration? duration,
   }) {
-    final PageConfig pageConfig =
-        AppPagesExtension.getPageConfig(page, arguments);
+    _checkRouteType(page);
+
+    final RouteConfig routeConfig = _getRouteConfig(page);
 
     return pushReplacement(
       _createRoute(
-        pageBuilder: _resolvePageBuilder(
-          pageBuilder: pageConfig.pageBuilder,
+        pageBuilder: _resolvePageBuilderWithBloc(
+          pageBuilder: _getPageBuilder(
+            routeConfig,
+            argument,
+            arguments,
+          ),
           blocValue: blocValue,
           blocProviders: blocProviders,
         ),
-        settings: RouteSettings(name: page.name, arguments: arguments),
-        transition: transition ?? pageConfig.transition,
-        transitionDuration: duration ?? pageConfig.transitionDuration,
-        curve: curve ?? pageConfig.curve,
-        opaque: pageConfig.opaque,
-        fullscreenDialog: pageConfig.fullscreenDialog,
+        settings: RouteSettings(
+          name: _effectiveRouteNameBuilder(page),
+          arguments: arguments,
+        ),
+        transitionBuilderDelegate:
+            (transition ?? routeConfig.transition)?.builder ??
+                customTransitionBuilderDelegate ??
+                routeConfig.customTransitionBuilderDelegate,
+        transitionDuration: duration ?? routeConfig.transitionDuration,
+        curve: curve ?? routeConfig.curve,
+        opaque: routeConfig.opaque,
+        fullscreenDialog: routeConfig.fullscreenDialog,
       ),
     );
   }
@@ -437,31 +674,44 @@ extension NavigatorStateExtension on NavigatorState {
   /// The duration the transition going forwards.
   Future<T?>?
       replaceAllWithPage<T extends Object?, B extends BlocBase<Object?>>(
-    AppPages page, {
+    dynamic page, {
     bool Function(Route<dynamic>)? predicate,
+    dynamic argument,
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
     Transition? transition,
+    TransitionBuilderDelegate? customTransitionBuilderDelegate,
     Curve? curve,
     Duration? duration,
   }) {
-    final PageConfig pageConfig =
-        AppPagesExtension.getPageConfig(page, arguments);
+    _checkRouteType(page);
+
+    final RouteConfig routeConfig = _getRouteConfig(page);
 
     return pushAndRemoveUntil(
       _createRoute(
-        pageBuilder: _resolvePageBuilder(
-          pageBuilder: pageConfig.pageBuilder,
+        pageBuilder: _resolvePageBuilderWithBloc(
+          pageBuilder: _getPageBuilder(
+            routeConfig,
+            argument,
+            arguments,
+          ),
           blocValue: blocValue,
           blocProviders: blocProviders,
         ),
-        settings: RouteSettings(name: page.name, arguments: arguments),
-        transition: transition ?? pageConfig.transition,
-        transitionDuration: duration ?? pageConfig.transitionDuration,
-        curve: curve ?? pageConfig.curve,
-        opaque: pageConfig.opaque,
-        fullscreenDialog: pageConfig.fullscreenDialog,
+        settings: RouteSettings(
+          name: _effectiveRouteNameBuilder(page),
+          arguments: arguments,
+        ),
+        transitionBuilderDelegate:
+            (transition ?? routeConfig.transition)?.builder ??
+                customTransitionBuilderDelegate ??
+                routeConfig.customTransitionBuilderDelegate,
+        transitionDuration: duration ?? routeConfig.transitionDuration,
+        curve: curve ?? routeConfig.curve,
+        opaque: routeConfig.opaque,
+        fullscreenDialog: routeConfig.fullscreenDialog,
       ),
       predicate ?? (Route<dynamic> _) => false,
     );
@@ -477,8 +727,11 @@ extension NavigatorStateExtension on NavigatorState {
         if (route is MaterialPageRoute || route is PageRouteBuilder)
           routeName = route.settings.name;
 
-        return routeName == name || routeName == _initialPageName;
+        return routeName == name ||
+            routeName == _effectiveRouteNameBuilder(_initialPage);
       });
 
-  void backToPage(AppPages page) => backToPageName(page.name);
+  void backToPage(dynamic page) => backToPageName(
+        _effectiveRouteNameBuilder(page),
+      );
 }
