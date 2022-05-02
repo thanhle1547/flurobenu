@@ -344,13 +344,13 @@ PageBuilder _resolvePageBuilder<B extends BlocBase<Object?>>({
   if (blocValue != null)
     return () => BlocProvider.value(
           value: blocValue,
-          child: (() => pageBuilder())(),
+          child: pageBuilder(),
         );
 
   if (blocProviders != null)
     return () => MultiBlocProvider(
           providers: blocProviders,
-          child: (() => pageBuilder())(),
+          child: pageBuilder(),
         );
 
   return pageBuilder;
