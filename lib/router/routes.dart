@@ -2,7 +2,7 @@ import 'package:flurobenu/cubits/post_favorites/post_favorites_cubit.dart';
 import 'package:flurobenu/cubits/post_published/post_published_cubit.dart';
 import 'package:flurobenu/router/app_pages.dart';
 import 'package:flurobenu/router/route_config.dart';
-import 'package:flurobenu/router/transition.dart' as trans;
+import 'package:flurobenu/router/route_transition.dart';
 import 'package:flurobenu/screens/post_detail_screen.dart';
 import 'package:flurobenu/screens/post_published_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -32,7 +32,7 @@ late final RouteConfig _postDetail = RouteConfig(
     name: arguments!['name'] as String,
     id: arguments['id'] as int,
   ),
-  transition: trans.Transition.rightToLeftWithFade,
+  transition: RouteTransition.rightToLeftWithFade,
   opaque: true,
   fullscreenDialog: false,
 );

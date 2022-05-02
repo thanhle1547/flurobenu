@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'transition.dart';
+import 'route_transition.dart';
 import 'transition_builder_delegate.dart';
 
 class RouteConfig {
   final Widget Function(Map<String, dynamic>? arguments) pageBuilder;
-  final Transition? transition;
+  final RouteTransition? transition;
   final Duration? transitionDuration;
   final TransitionBuilderDelegate? customTransitionBuilderDelegate;
   final Curve? curve;

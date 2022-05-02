@@ -1,6 +1,6 @@
 import 'package:flurobenu/router/app_pages.dart';
 import 'package:flurobenu/router/app_router.dart';
-import 'package:flurobenu/router/transition.dart';
+import 'package:flurobenu/router/route_transition.dart';
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -20,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen> {
         AppRouter.replaceAllWithPage(
           context,
           AppPages.Post_Published,
-          transition: Transition.fadeIn,
+          transition: RouteTransition.fadeIn,
           curve: Curves.easeIn,
           duration: const Duration(milliseconds: 450),
         );

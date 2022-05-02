@@ -14,13 +14,14 @@ import 'package:flutter_bloc/src/bloc_provider.dart'
 
 import 'app_pages.dart';
 import 'argument_error.dart';
+import 'flurobenu_page_route_builder.dart';
 import 'route_config.dart';
-import 'transition.dart';
+import 'route_transition.dart';
 
 typedef PageBuilder = Widget Function();
 
 dynamic _initialPage;
-Transition? _defaultTransition;
+RouteTransition? _defaultTransition;
 Curve? _defaultTransitionCurve;
 Duration? _defaultTransitionDuration;
 bool _shouldPreventDuplicates = true;
@@ -34,25 +35,16 @@ PageRouteBuilder<T> _createRoute<T>({
   bool opaque = true,
   bool fullscreenDialog = false,
 }) =>
-    PageRouteBuilder<T>(
-      pageBuilder: (_, __, ___) => pageBuilder(),
+    FlurobenuPageRouteBuilder<T>(
       settings: settings,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final builder = transitionBuilderDelegate ??
-            _defaultTransition?.builder ??
-            Transition.none.builder;
-
-        return builder.buildTransition(
-          context,
-          animation,
-          secondaryAnimation,
-          curve ?? _defaultTransitionCurve,
-          child,
-        );
-      },
+      pageBuilder: (_, __, ___) => pageBuilder(),
+      transitionBuilderDelegate: transitionBuilderDelegate ??
+          _defaultTransition?.builder ??
+          RouteTransition.none.builder,
       transitionDuration: transitionDuration ??
           _defaultTransitionDuration ??
           const Duration(milliseconds: 300),
+      curve: curve ?? _defaultTransitionCurve,
       opaque: opaque,
       fullscreenDialog: fullscreenDialog,
     );
@@ -104,7 +96,7 @@ class AppRouter {
     required dynamic initialPage,
     String Function(dynamic page)? routeNameBuilder,
     String Function(dynamic page)? pageKeyBuilder,
-    Transition? transition = Transition.rightToLeft,
+    RouteTransition? transition = RouteTransition.rightToLeft,
     Curve? transitionCurve = Curves.easeOutQuad,
     Duration? transitionDuration = const Duration(milliseconds: 320),
     bool preventDuplicates = true,
@@ -169,7 +161,7 @@ class AppRouter {
     List<String>? requiredArgumentNames,
     Map<String, Type>? requiredArguments,
     Type? requiredArgumentType,
-    Transition? transition,
+    RouteTransition? transition,
     Duration? transitionDuration,
     Curve? curve,
     bool opaque = true,
@@ -201,7 +193,7 @@ class AppRouter {
     List<String>? requiredArgumentNames,
     Map<String, Type>? requiredArguments,
     Type? requiredArgumentType,
-    Transition? transition,
+    RouteTransition? transition,
     Duration? transitionDuration,
     Curve? curve,
     bool opaque = true,
@@ -268,7 +260,7 @@ class AppRouter {
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
-    Transition? transition,
+    RouteTransition? transition,
     TransitionBuilderDelegate? customTransitionBuilderDelegate,
     Curve? curve,
     Duration? duration,
@@ -297,7 +289,7 @@ class AppRouter {
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
-    Transition? transition,
+    RouteTransition? transition,
     Curve? curve,
     Duration? duration,
   }) =>
@@ -321,7 +313,7 @@ class AppRouter {
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
-    Transition? transition,
+    RouteTransition? transition,
     TransitionBuilderDelegate? customTransitionBuilderDelegate,
     Curve? curve,
     Duration? duration,
@@ -370,7 +362,7 @@ extension FlurobenuExtension on BuildContext {
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
-    Transition? transition,
+    RouteTransition? transition,
     Curve? curve,
     Duration? duration,
     bool? opaque,
@@ -395,7 +387,7 @@ extension FlurobenuExtension on BuildContext {
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
-    Transition? transition,
+    RouteTransition? transition,
     Curve? curve,
     Duration? duration,
   }) =>
@@ -418,7 +410,7 @@ extension FlurobenuExtension on BuildContext {
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
-    Transition? transition,
+    RouteTransition? transition,
     Curve? curve,
     Duration? duration,
   }) =>
@@ -579,7 +571,7 @@ extension NavigatorStateExtension on NavigatorState {
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
-    Transition? transition,
+    RouteTransition? transition,
     TransitionBuilderDelegate? customTransitionBuilderDelegate,
     Curve? curve,
     bool? preventDuplicates,
@@ -634,7 +626,7 @@ extension NavigatorStateExtension on NavigatorState {
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
-    Transition? transition,
+    RouteTransition? transition,
     TransitionBuilderDelegate? customTransitionBuilderDelegate,
     Curve? curve,
     Duration? duration,
@@ -680,7 +672,7 @@ extension NavigatorStateExtension on NavigatorState {
     Map<String, dynamic>? arguments,
     B? blocValue,
     List<BlocProviderSingleChildWidget>? blocProviders,
-    Transition? transition,
+    RouteTransition? transition,
     TransitionBuilderDelegate? customTransitionBuilderDelegate,
     Curve? curve,
     Duration? duration,

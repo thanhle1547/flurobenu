@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 abstract class TransitionBuilderDelegate {
   const TransitionBuilderDelegate();
 
-  Widget buildTransition(
+  Widget buildTransition<T>(
+    PageRoute<T> route,
     BuildContext context,
     Animation<double> animation,
     Animation<double> secondaryAnimation,
@@ -14,7 +15,7 @@ abstract class TransitionBuilderDelegate {
   );
 }
 
-extension AnimatableExt on Animatable {
+extension on Animatable {
   /// Returns a new [Animatable] whose value is determined by first evaluating
   /// the given parent and then evaluating this object.
   ///
@@ -30,7 +31,8 @@ class NoTransition extends TransitionBuilderDelegate {
   const NoTransition();
 
   @override
-  Widget buildTransition(
+  Widget buildTransition<T>(
+    PageRoute<T> route,
     BuildContext context,
     Animation<double> animation,
     Animation<double> secondaryAnimation,
@@ -45,7 +47,8 @@ class FadeInTransition extends TransitionBuilderDelegate {
   const FadeInTransition();
 
   @override
-  Widget buildTransition(
+  Widget buildTransition<T>(
+    PageRoute<T> route,
     BuildContext context,
     Animation<double> animation,
     Animation<double> secondaryAnimation,
@@ -66,7 +69,8 @@ class RightToLeftTransition extends TransitionBuilderDelegate {
   const RightToLeftTransition();
 
   @override
-  Widget buildTransition(
+  Widget buildTransition<T>(
+    PageRoute<T> route,
     BuildContext context,
     Animation<double> animation,
     Animation<double> secondaryAnimation,
@@ -89,7 +93,8 @@ class RightToLeftWithFadeTransition extends TransitionBuilderDelegate {
   const RightToLeftWithFadeTransition();
 
   @override
-  Widget buildTransition(
+  Widget buildTransition<T>(
+    PageRoute<T> route,
     BuildContext context,
     Animation<double> animation,
     Animation<double> secondaryAnimation,
@@ -117,7 +122,8 @@ class DownToUpTransition extends TransitionBuilderDelegate {
   const DownToUpTransition();
 
   @override
-  Widget buildTransition(
+  Widget buildTransition<T>(
+    PageRoute<T> route,
     BuildContext context,
     Animation<double> animation,
     Animation<double> secondaryAnimation,
@@ -134,6 +140,56 @@ class DownToUpTransition extends TransitionBuilderDelegate {
     return SlideTransition(
       position: animation.drive(tween),
       child: child,
+    );
+  }
+}
+
+class OpenUpwardsTransition extends TransitionBuilderDelegate {
+  const OpenUpwardsTransition();
+
+  @override
+  Widget buildTransition<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Curve? curve,
+    Widget child,
+  ) {
+    final CurvedAnimation? curvedAnimation =
+        curve == null ? null : CurvedAnimation(parent: animation, curve: curve);
+
+    return const OpenUpwardsPageTransitionsBuilder().buildTransitions(
+      route,
+      context,
+      curvedAnimation ?? animation,
+      secondaryAnimation,
+      child,
+    );
+  }
+}
+
+class FadeUpwardsTransition extends TransitionBuilderDelegate {
+  const FadeUpwardsTransition();
+
+  @override
+  Widget buildTransition<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Curve? curve,
+    Widget child,
+  ) {
+    final CurvedAnimation? curvedAnimation =
+        curve == null ? null : CurvedAnimation(parent: animation, curve: curve);
+
+    return const FadeUpwardsPageTransitionsBuilder().buildTransitions(
+      route,
+      context,
+      curvedAnimation ?? animation,
+      secondaryAnimation,
+      child,
     );
   }
 }
