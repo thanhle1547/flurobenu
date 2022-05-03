@@ -27,6 +27,12 @@ late final RouteConfig _postDetail = RouteConfig(
   requiredArguments: {
     'name': String,
     'id': int,
+    'aRandomIntListForNothing': 'List<int>',
+    'anotherRandomListForNothing': List,
+    'aRandomMapForNothing': Map,
+    // uncomment the line below to see the error
+    // 'aRandomValueWillThrowErrorAtAssert': dynamic,
+    'anIntValueButTheDeclarationIsAIntValue': 9,
   },
   pageBuilder: (arguments) => PostDetailScreen(
     name: arguments!['name'] as String,

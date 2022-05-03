@@ -25,6 +25,7 @@ RouteTransition? _defaultTransition;
 Curve? _defaultTransitionCurve;
 Duration? _defaultTransitionDuration;
 bool _shouldPreventDuplicates = true;
+// bool _checkDefinedArgumentsTypeAtRunning = false;
 
 PageRouteBuilder<T> _createRoute<T>({
   required PageBuilder pageBuilder,
@@ -77,6 +78,21 @@ void _checkRouteType(dynamic page) {
     );
 }
 
+/* 
+void _checkDefinedRouteRequiredArguments(
+    Map<String, Object>? requiredArguments) {
+  if (requiredArguments == null) return;
+
+  for (final MapEntry<String, Object> item in requiredArguments.entries) {
+    if (item.value.toString() == _dynamicWord)
+      _logAndThrowError(InvalidArgumentTypeException(item.key));
+  }
+
+  // if (effectiveEntryTypeName == _dynamicWord)
+  //   _logAndThrowError(ArgumentError.notNull(entry.key));
+}
+*/
+
 String Function(dynamic page)? _routeNameBuilder;
 
 String Function(dynamic page) get _effectiveRouteNameBuilder =>
@@ -100,6 +116,7 @@ class AppRouter {
     Curve? transitionCurve = Curves.easeOutQuad,
     Duration? transitionDuration = const Duration(milliseconds: 320),
     bool preventDuplicates = true,
+    bool checkDefinedArgumentsTypeAtRunning = true,
   }) {
     if (routeTypes != null) _routeTypes = routeTypes;
     if (routes != null) _routes.addAll(routes);
@@ -110,6 +127,7 @@ class AppRouter {
     _defaultTransitionCurve = transitionCurve;
     _defaultTransitionDuration = transitionDuration;
     _shouldPreventDuplicates = preventDuplicates;
+    // _checkDefinedArgumentsTypeAtRunning = checkDefinedArgumentsTypeAtRunning;
   }
 
   // ignore: avoid_setters_without_getters
@@ -159,7 +177,7 @@ class AppRouter {
   void define({
     dynamic page,
     List<String>? requiredArgumentNames,
-    Map<String, Type>? requiredArguments,
+    Map<String, Object>? requiredArguments,
     Type? requiredArgumentType,
     RouteTransition? transition,
     Duration? transitionDuration,
@@ -171,6 +189,14 @@ class AppRouter {
     required Widget Function(Map<String, dynamic>? arguments) pageBuilder,
   }) {
     _checkRouteType(page);
+
+    // if (_checkDefinedArgumentsTypeAtRunning)
+    //   _checkDefinedRouteRequiredArguments(requiredArguments);
+
+    assert(
+      assertRequiredArguments(requiredArguments),
+      assertRequiredArgumentsFailed,
+    );
 
     _routes.putIfAbsent(
       page,
@@ -193,7 +219,7 @@ class AppRouter {
   void defineGroup({
     required List<dynamic> pages,
     List<String>? requiredArgumentNames,
-    Map<String, Type>? requiredArguments,
+    Map<String, Object>? requiredArguments,
     Type? requiredArgumentType,
     RouteTransition? transition,
     Duration? transitionDuration,
@@ -494,6 +520,17 @@ RouteConfig _getRouteConfig(dynamic page) {
   }
 }
 
+/* 
+const String _dynamicWord = 'dynamic';
+late final RegExp _dynamicTypeRegex = RegExp(
+  '<$_dynamicWord(, $_dynamicWord)?>\$',
+);
+*/
+
+late final RegExp _dynamicTypeRegex = RegExp(
+  r'<dynamic(, dynamic)?>$',
+);
+
 Widget Function() _getPageBuilder<T extends Object?>(
   RouteConfig routeConfig,
   dynamic argument,
@@ -519,11 +556,26 @@ Widget Function() _getPageBuilder<T extends Object?>(
       ));
     } else {
       for (final entry in routeConfig.requiredArguments!.entries) {
+        final Type effectiveEntryType =
+            entry.value is Type ? entry.value as Type : entry.value.runtimeType;
+
         if (!arguments.containsKey(entry.key)) {
-          _logAndThrowError(MissingArgument(entry.key, entry.value));
-        } else if (arguments[entry.key].runtimeType != entry.value) {
+          _logAndThrowError(MissingArgument(entry.key, effectiveEntryType));
+        }
+
+        String effectiveEntryTypeName = entry.value is String
+            ? entry.value as String
+            : effectiveEntryType.toString();
+
+        effectiveEntryTypeName =
+            effectiveEntryTypeName.replaceFirst(_dynamicTypeRegex, '');
+
+        if (!arguments[entry.key]
+            .runtimeType
+            .toString()
+            .contains(effectiveEntryTypeName)) {
           _logAndThrowError(ArgumentTypeError(
-            entry.value,
+            effectiveEntryType,
             arguments[entry.key].runtimeType,
             "'${entry.key}'",
           ));

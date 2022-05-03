@@ -15,6 +15,18 @@ class ArgumentTypeError {
 }
 
 /*
+class InvalidArgumentTypeException {
+  final String _name;
+
+  InvalidArgumentTypeException(this._name);
+
+  @override
+  String toString() => "A value of type dynamic can not "
+      "be defined (in argument name $_name)";
+}
+*/
+
+/*
 class NoArgumentError {
   const NoArgumentError();
 

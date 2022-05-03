@@ -19,6 +19,11 @@ class PostPublishedScreen extends StatelessWidget {
         arguments: {
           'name': name,
           'id': id,
+          'aRandomIntListForNothing': [1, 2],
+          'anotherRandomListForNothing': [3, 4],
+          'aRandomMapForNothing': {'a': 0},
+          'aRandomValueWillThrowErrorAtAssert': 0,
+          'anIntValueButTheDeclarationIsAIntValue': 0,
         },
       );
     } else {
@@ -29,6 +34,11 @@ class PostPublishedScreen extends StatelessWidget {
         arguments: {
           'name': name,
           'id': id,
+          'aRandomIntListForNothing': [1, 2],
+          'anotherRandomListForNothing': [3, 4],
+          'aRandomMapForNothing': {'a': 0},
+          'aRandomValueWillThrowErrorAtAssert': 0,
+          'anIntValueButTheDeclarationIsAIntValue': 0,
         },
       );
     }
