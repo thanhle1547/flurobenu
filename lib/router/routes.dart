@@ -30,8 +30,9 @@ late final RouteConfig _postDetail = RouteConfig(
     'aRandomIntListForNothing': 'List<int>',
     'anotherRandomListForNothing': List,
     'aRandomMapForNothing': Map,
-    // uncomment the line below to see the error
+    // uncomment each one of the line below to see the error
     // 'aRandomValueWillThrowErrorAtAssert': dynamic,
+    // 'aRandomValueWillThrowErrorAtAssert': 'list<int>',
     'anIntValueButTheDeclarationIsAIntValue': 9,
   },
   pageBuilder: (arguments) => PostDetailScreen(

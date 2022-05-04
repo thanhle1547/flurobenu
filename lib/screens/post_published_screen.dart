@@ -22,7 +22,8 @@ class PostPublishedScreen extends StatelessWidget {
           'aRandomIntListForNothing': [1, 2],
           'anotherRandomListForNothing': [3, 4],
           'aRandomMapForNothing': {'a': 0},
-          'aRandomValueWillThrowErrorAtAssert': 0,
+          // 'aRandomValueWillThrowErrorAtAssert': 0,
+          // 'aRandomValueWillThrowErrorAtAssert': [1, 2],
           'anIntValueButTheDeclarationIsAIntValue': 0,
         },
       );
@@ -37,7 +38,8 @@ class PostPublishedScreen extends StatelessWidget {
           'aRandomIntListForNothing': [1, 2],
           'anotherRandomListForNothing': [3, 4],
           'aRandomMapForNothing': {'a': 0},
-          'aRandomValueWillThrowErrorAtAssert': 0,
+          // 'aRandomValueWillThrowErrorAtAssert': 0,
+          // 'aRandomValueWillThrowErrorAtAssert': [1, 2],
           'anIntValueButTheDeclarationIsAIntValue': 0,
         },
       );
