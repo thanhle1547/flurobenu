@@ -531,6 +531,14 @@ late final RegExp _dynamicTypeRegex = RegExp(
   r'<dynamic(, dynamic)?>$',
 );
 
+/*
+late final RegExp _functionTypeRegex = RegExp(r' Function\(');
+
+late final RegExp _functionParametersRegex = RegExp(
+  r'\(\)',
+);
+*/
+
 Widget Function() _getPageBuilder<T extends Object?>(
   RouteConfig routeConfig,
   dynamic argument,
@@ -570,13 +578,64 @@ Widget Function() _getPageBuilder<T extends Object?>(
         effectiveEntryTypeName =
             effectiveEntryTypeName.replaceFirst(_dynamicTypeRegex, '');
 
-        if (!arguments[entry.key]
-            .runtimeType
-            .toString()
-            .contains(effectiveEntryTypeName)) {
+        final currentArgument = arguments[entry.key];
+
+        String effectiveArgumentType = objectRuntimeType(currentArgument, '');
+
+        if (effectiveArgumentType.contains('=>'))
+          effectiveArgumentType = 'Function';
+
+        /*
+        if (!effectiveArgumentType.contains(_functionTypeRegex)) {
+          final String argumentReturnType =
+              effectiveArgumentType.split('=> ')[1];
+
+          if (argumentReturnType != 'dynamic') {
+            final String entryReturnType =
+                effectiveEntryTypeName.split(_functionTypeRegex)[0];
+
+            if (argumentReturnType != entryReturnType) {
+              _logAndThrowError(ArgumentTypeError(
+                effectiveEntryType,
+                argumentType,
+                "'${entry.key}'",
+              ));
+            }
+          }
+
+          effectiveArgumentType = effectiveArgumentType.replaceAll('\n', '');
+
+          final String parameters = effectiveArgumentType.substring(
+            effectiveArgumentType.indexOf('(') + 1,
+            effectiveArgumentType.lastIndexOf(')'),
+          );
+
+          final int indexOfPCurlyBraces = effectiveArgumentType.indexOf('{');
+
+          // Function
+
+          String? namedArguments;
+
+          if (indexOfPCurlyBraces != -1) {
+            namedArguments = effectiveArgumentType.substring(
+              indexOfPCurlyBraces + 1,
+              effectiveArgumentType.lastIndexOf('}'),
+            );
+          }
+
+          final List<String> argumentParametersType = parameters.split();
+
           _logAndThrowError(ArgumentTypeError(
             effectiveEntryType,
-            arguments[entry.key].runtimeType,
+            argumentType,
+            "'${entry.key}'",
+          ));
+        } else 
+        */
+        if (!effectiveArgumentType.contains(effectiveEntryTypeName)) {
+          _logAndThrowError(ArgumentTypeError(
+            effectiveEntryType,
+            currentArgument.runtimeType,
             "'${entry.key}'",
           ));
         }

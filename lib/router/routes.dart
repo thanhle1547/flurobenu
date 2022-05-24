@@ -34,6 +34,8 @@ late final RouteConfig _postDetail = RouteConfig(
     // 'aRandomValueWillThrowErrorAtAssert': dynamic,
     // 'aRandomValueWillThrowErrorAtAssert': 'list<int>',
     'anIntValueButTheDeclarationIsAIntValue': 9,
+    // 'aFunction': 'void Function()',
+    'aFunction': Function,
   },
   pageBuilder: (arguments) => PostDetailScreen(
     name: arguments!['name'] as String,

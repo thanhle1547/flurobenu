@@ -25,6 +25,7 @@ class PostPublishedScreen extends StatelessWidget {
           // 'aRandomValueWillThrowErrorAtAssert': 0,
           // 'aRandomValueWillThrowErrorAtAssert': [1, 2],
           'anIntValueButTheDeclarationIsAIntValue': 0,
+          'aFunction': () {},
         },
       );
     } else {
@@ -41,6 +42,7 @@ class PostPublishedScreen extends StatelessWidget {
           // 'aRandomValueWillThrowErrorAtAssert': 0,
           // 'aRandomValueWillThrowErrorAtAssert': [1, 2],
           'anIntValueButTheDeclarationIsAIntValue': 0,
+          'aFunction': () {},
         },
       );
     }
