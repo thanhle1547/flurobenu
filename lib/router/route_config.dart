@@ -7,13 +7,17 @@ const String assertRequiredArgumentsFailed =
     'A value of type dynamic can not be defined';
 
 bool assertRequiredArguments(Map<String, Object>? requiredArguments) {
-  if (requiredArguments == null) return true;
+  assert(() {
+    if (requiredArguments == null) return true;
 
-  for (final MapEntry<String, Object> item in requiredArguments.entries) {
-    final String type = item.value.toString();
+    for (final MapEntry<String, Object> item in requiredArguments.entries) {
+      final String type = item.value.toString();
 
-    if (type == 'dynamic') return false;
-  }
+      if (type == 'dynamic') return false;
+    }
+
+    return true;
+  }());
 
   return true;
 }

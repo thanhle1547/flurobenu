@@ -71,11 +71,17 @@ PageRouteBuilder _createRouteFromName(String? name) {
 List<Type> _routeTypes = [];
 bool get _shouldCheckRouteType => _routeTypes.isNotEmpty;
 
-void _checkRouteType(dynamic page) {
-  if (_shouldCheckRouteType && !_routeTypes.contains(page.runtimeType))
-    throw ArgumentError(
-      "Route types did not contain type ${page.runtimeType} ($page)",
-    );
+bool _checkRouteType(dynamic page) {
+  assert(() {
+    if (_shouldCheckRouteType && !_routeTypes.contains(page.runtimeType))
+      throw ArgumentError(
+        "Route types did not contain type ${page.runtimeType} ($page)",
+      );
+
+    return true;
+  }());
+
+  return true;
 }
 
 /* 
@@ -188,7 +194,7 @@ class AppRouter {
     bool? preventDuplicates,
     required Widget Function(Map<String, dynamic>? arguments) pageBuilder,
   }) {
-    _checkRouteType(page);
+    assert(_checkRouteType(page));
 
     // if (_checkDefinedArgumentsTypeAtRunning)
     //   _checkDefinedRouteRequiredArguments(requiredArguments);
@@ -544,127 +550,132 @@ Widget Function() _getPageBuilder<T extends Object?>(
   dynamic argument,
   Map<String, dynamic>? arguments,
 ) {
-  if (routeConfig.requiredArgumentNames != null) {
-    if (arguments == null) {
-      _logAndThrowError(MissingArgument(
-        routeConfig.requiredArgumentNames.toString(),
-      ));
+  assert(() {
+    if (routeConfig.requiredArgumentNames != null) {
+      if (arguments == null) {
+        _logAndThrowError(MissingArgument(
+          routeConfig.requiredArgumentNames.toString(),
+        ));
+      }
+
+      for (final String name in routeConfig.requiredArgumentNames!) {
+        if (!arguments!.containsKey(name))
+          _logAndThrowError(MissingArgument(name));
+      }
     }
 
-    for (final String name in routeConfig.requiredArgumentNames!) {
-      if (!arguments!.containsKey(name))
-        _logAndThrowError(MissingArgument(name));
-    }
-  }
+    if (routeConfig.requiredArguments != null) {
+      if (arguments == null) {
+        _logAndThrowError(MissingArgument(
+          routeConfig.requiredArguments.toString(),
+        ));
+      } else {
+        for (final entry in routeConfig.requiredArguments!.entries) {
+          final Type effectiveEntryType = entry.value is Type
+              ? entry.value as Type
+              : entry.value.runtimeType;
 
-  if (routeConfig.requiredArguments != null) {
-    if (arguments == null) {
-      _logAndThrowError(MissingArgument(
-        routeConfig.requiredArguments.toString(),
-      ));
-    } else {
-      for (final entry in routeConfig.requiredArguments!.entries) {
-        final Type effectiveEntryType =
-            entry.value is Type ? entry.value as Type : entry.value.runtimeType;
-
-        if (!arguments.containsKey(entry.key)) {
-          _logAndThrowError(MissingArgument(entry.key, effectiveEntryType));
-        }
-
-        String effectiveEntryTypeName = entry.value is String
-            ? entry.value as String
-            : effectiveEntryType.toString();
-
-        effectiveEntryTypeName =
-            effectiveEntryTypeName.replaceFirst(_dynamicTypeRegex, '');
-
-        final currentArgument = arguments[entry.key];
-
-        String effectiveArgumentType = objectRuntimeType(currentArgument, '');
-
-        if (effectiveArgumentType.contains('=>'))
-          effectiveArgumentType = 'Function';
-
-        /*
-        if (!effectiveArgumentType.contains(_functionTypeRegex)) {
-          final String argumentReturnType =
-              effectiveArgumentType.split('=> ')[1];
-
-          if (argumentReturnType != 'dynamic') {
-            final String entryReturnType =
-                effectiveEntryTypeName.split(_functionTypeRegex)[0];
-
-            if (argumentReturnType != entryReturnType) {
-              _logAndThrowError(ArgumentTypeError(
-                effectiveEntryType,
-                argumentType,
-                "'${entry.key}'",
-              ));
-            }
+          if (!arguments.containsKey(entry.key)) {
+            _logAndThrowError(MissingArgument(entry.key, effectiveEntryType));
           }
 
-          effectiveArgumentType = effectiveArgumentType.replaceAll('\n', '');
+          String effectiveEntryTypeName = entry.value is String
+              ? entry.value as String
+              : effectiveEntryType.toString();
 
-          final String parameters = effectiveArgumentType.substring(
-            effectiveArgumentType.indexOf('(') + 1,
-            effectiveArgumentType.lastIndexOf(')'),
-          );
+          effectiveEntryTypeName =
+              effectiveEntryTypeName.replaceFirst(_dynamicTypeRegex, '');
 
-          final int indexOfPCurlyBraces = effectiveArgumentType.indexOf('{');
+          final currentArgument = arguments[entry.key];
 
-          // Function
+          String effectiveArgumentType = objectRuntimeType(currentArgument, '');
 
-          String? namedArguments;
+          if (effectiveArgumentType.contains('=>'))
+            effectiveArgumentType = 'Function';
 
-          if (indexOfPCurlyBraces != -1) {
-            namedArguments = effectiveArgumentType.substring(
-              indexOfPCurlyBraces + 1,
-              effectiveArgumentType.lastIndexOf('}'),
+          /*
+          if (!effectiveArgumentType.contains(_functionTypeRegex)) {
+            final String argumentReturnType =
+                effectiveArgumentType.split('=> ')[1];
+
+            if (argumentReturnType != 'dynamic') {
+              final String entryReturnType =
+                  effectiveEntryTypeName.split(_functionTypeRegex)[0];
+
+              if (argumentReturnType != entryReturnType) {
+                _logAndThrowError(ArgumentTypeError(
+                  effectiveEntryType,
+                  argumentType,
+                  "'${entry.key}'",
+                ));
+              }
+            }
+
+            effectiveArgumentType = effectiveArgumentType.replaceAll('\n', '');
+
+            final String parameters = effectiveArgumentType.substring(
+              effectiveArgumentType.indexOf('(') + 1,
+              effectiveArgumentType.lastIndexOf(')'),
+            );
+
+            final int indexOfPCurlyBraces = effectiveArgumentType.indexOf('{');
+
+            // Function
+
+            String? namedArguments;
+
+            if (indexOfPCurlyBraces != -1) {
+              namedArguments = effectiveArgumentType.substring(
+                indexOfPCurlyBraces + 1,
+                effectiveArgumentType.lastIndexOf('}'),
+              );
+            }
+
+            final List<String> argumentParametersType = parameters.split();
+
+            _logAndThrowError(ArgumentTypeError(
+              effectiveEntryType,
+              argumentType,
+              "'${entry.key}'",
+            ));
+          } else 
+          */
+          if (!effectiveArgumentType.contains(effectiveEntryTypeName)) {
+            _logAndThrowError(ArgumentTypeError(
+              effectiveEntryType,
+              currentArgument.runtimeType,
+              "'${entry.key}'",
+            ));
+          }
+        }
+      }
+    }
+
+    /*
+    else if (routeConfig.requiredArgumentType != null) {
+      if (argument != null && argument != routeConfig.requiredArgumentType) {
+        throw ArgumentTypeError(
+          routeConfig.requiredArgumentType!,
+          argument.runtimeType,
+        );
+      } else if (arguments != null) {
+        for (final entry in routeConfig.requiredArguments!.entries) {
+          if (!arguments.containsKey(entry.key))
+            throw MissingArgument(entry.key, entry.value);
+          else if (arguments[entry.key].runtimeType != entry.value) {
+            throw ArgumentTypeError(
+              entry.value,
+              arguments[entry.key].runtimeType,
+              "'${entry.key}'",
             );
           }
-
-          final List<String> argumentParametersType = parameters.split();
-
-          _logAndThrowError(ArgumentTypeError(
-            effectiveEntryType,
-            argumentType,
-            "'${entry.key}'",
-          ));
-        } else 
-        */
-        if (!effectiveArgumentType.contains(effectiveEntryTypeName)) {
-          _logAndThrowError(ArgumentTypeError(
-            effectiveEntryType,
-            currentArgument.runtimeType,
-            "'${entry.key}'",
-          ));
         }
       }
     }
-  }
+    */
 
-  /*
-  else if (routeConfig.requiredArgumentType != null) {
-    if (argument != null && argument != routeConfig.requiredArgumentType) {
-      throw ArgumentTypeError(
-        routeConfig.requiredArgumentType!,
-        argument.runtimeType,
-      );
-    } else if (arguments != null) {
-      for (final entry in routeConfig.requiredArguments!.entries) {
-        if (!arguments.containsKey(entry.key))
-          throw MissingArgument(entry.key, entry.value);
-        else if (arguments[entry.key].runtimeType != entry.value) {
-          throw ArgumentTypeError(
-            entry.value,
-            arguments[entry.key].runtimeType,
-            "'${entry.key}'",
-          );
-        }
-      }
-    }
-  }
-  */
+    return true;
+  }());
 
   return () => routeConfig.pageBuilder(arguments);
 }
@@ -694,17 +705,21 @@ extension NavigatorStateExtension on NavigatorState {
     bool? opaque,
     bool? fullscreenDialog,
   }) {
-    _checkRouteType(page);
+    assert(_checkRouteType(page));
 
     final RouteConfig routeConfig = _getRouteConfig(page);
 
     // if (requiredArgumentNames != null)
 
-    if ((preventDuplicates ?? _shouldPreventDuplicates) &&
-        widget.pages.isNotEmpty &&
-        widget.pages.last.name == page.name) {
-      _duplicatedPage(page.name.runtimeType.toString());
-    }
+    assert(() {
+      if ((preventDuplicates ?? _shouldPreventDuplicates) &&
+          widget.pages.isNotEmpty &&
+          widget.pages.last.name == page.name) {
+        _duplicatedPage(page.name.runtimeType.toString());
+      }
+
+      return true;
+    }());
 
     return push<T>(
       _createRoute(
@@ -746,7 +761,7 @@ extension NavigatorStateExtension on NavigatorState {
     Curve? curve,
     Duration? duration,
   }) {
-    _checkRouteType(page);
+    assert(_checkRouteType(page));
 
     final RouteConfig routeConfig = _getRouteConfig(page);
 
@@ -792,7 +807,7 @@ extension NavigatorStateExtension on NavigatorState {
     Curve? curve,
     Duration? duration,
   }) {
-    _checkRouteType(page);
+    assert(_checkRouteType(page));
 
     final RouteConfig routeConfig = _getRouteConfig(page);
 
