@@ -199,11 +199,6 @@ class AppRouter {
     // if (_checkDefinedArgumentsTypeAtRunning)
     //   _checkDefinedRouteRequiredArguments(requiredArguments);
 
-    assert(
-      assertRequiredArguments(requiredArguments),
-      assertRequiredArgumentsFailed,
-    );
-
     _routes.putIfAbsent(
       page,
       () => RouteConfig(
