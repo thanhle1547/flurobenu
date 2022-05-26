@@ -294,6 +294,7 @@ class AppRouter {
     RouteTransition? transition,
     TransitionBuilderDelegate? customTransitionBuilderDelegate,
     Curve? curve,
+    bool? preventDuplicates,
     Duration? duration,
     bool? opaque,
     bool? fullscreenDialog,
@@ -306,6 +307,7 @@ class AppRouter {
         transition: transition,
         customTransitionBuilderDelegate: customTransitionBuilderDelegate,
         curve: curve,
+        preventDuplicates: preventDuplicates,
         duration: duration,
         opaque: opaque,
         fullscreenDialog: fullscreenDialog,
@@ -372,6 +374,17 @@ class AppRouter {
 
   static void backToPage(BuildContext context, AppPages page) =>
       backToPageName(context, page.name);
+
+  /// Trick explained here: https://github.com/flutter/flutter/issues/20451
+  /// Note `ModalRoute.of(context).settings.name` doesn't always work.
+  static Route? getCurrentNavigatorRoute(BuildContext context) =>
+      (currentNavigator ?? Navigator.of(context))
+          .getCurrentNavigatorRoute(context);
+
+  /// Trick explained here: https://github.com/flutter/flutter/issues/20451
+  /// Note `ModalRoute.of(context).settings.name` doesn't always work.
+  static String? getCurrentNavigatorRouteName(BuildContext context) =>
+      getCurrentNavigatorRoute(context)!.settings.name;
 }
 
 extension FlurobenuExtension on BuildContext {
@@ -461,8 +474,19 @@ extension FlurobenuExtension on BuildContext {
   void backToPageName(String name) => Navigator.of(this).backToPageName(name);
 
   void backToPage(AppPages page) => backToPageName(page.name);
+
+  /// Trick explained here: https://github.com/flutter/flutter/issues/20451
+  /// Note `ModalRoute.of(context).settings.name` doesn't always work.
+  Route? getCurrentNavigatorRoute() =>
+      Navigator.of(this).getCurrentNavigatorRoute(this);
+
+  /// Trick explained here: https://github.com/flutter/flutter/issues/20451
+  /// Note `ModalRoute.of(context).settings.name` doesn't always work.
+  String? getCurrentNavigatorRouteName() =>
+      getCurrentNavigatorRoute()!.settings.name;
 }
 
+/*
 void _logAndThrowError(Object e) {
   if (kDebugMode) {
     log(e.toString(), name: 'Flurobenu');
@@ -474,6 +498,7 @@ void _logAndThrowError(Object e) {
 /// throw StateError when you pushed the same page to the stack
 void _duplicatedPage(String name) =>
     _logAndThrowError(StateError("Duplicated Page: $name"));
+*/
 
 PageBuilder _resolvePageBuilderWithBloc<B extends BlocBase<Object?>>({
   required PageBuilder pageBuilder,
@@ -481,9 +506,9 @@ PageBuilder _resolvePageBuilderWithBloc<B extends BlocBase<Object?>>({
   List<BlocProviderSingleChildWidget>? blocProviders,
 }) {
   if (blocValue != null && blocProviders != null)
-    _logAndThrowError(ArgumentError(
+    throw ArgumentError(
       'Do not pass value to [blocValue] & [blocProviders] at the same time.',
-    ));
+    );
 
   if (blocValue != null)
     return () => BlocProvider.value(
@@ -548,22 +573,21 @@ Widget Function() _getPageBuilder<T extends Object?>(
   assert(() {
     if (routeConfig.requiredArgumentNames != null) {
       if (arguments == null) {
-        _logAndThrowError(MissingArgument(
+        throw MissingArgument(
           routeConfig.requiredArgumentNames.toString(),
-        ));
+        );
       }
 
       for (final String name in routeConfig.requiredArgumentNames!) {
-        if (!arguments!.containsKey(name))
-          _logAndThrowError(MissingArgument(name));
+        if (!arguments.containsKey(name)) throw MissingArgument(name);
       }
     }
 
     if (routeConfig.requiredArguments != null) {
       if (arguments == null) {
-        _logAndThrowError(MissingArgument(
+        throw MissingArgument(
           routeConfig.requiredArguments.toString(),
-        ));
+        );
       } else {
         for (final entry in routeConfig.requiredArguments!.entries) {
           final Type effectiveEntryType = entry.value is Type
@@ -571,7 +595,7 @@ Widget Function() _getPageBuilder<T extends Object?>(
               : entry.value.runtimeType;
 
           if (!arguments.containsKey(entry.key)) {
-            _logAndThrowError(MissingArgument(entry.key, effectiveEntryType));
+            throw MissingArgument(entry.key, effectiveEntryType);
           }
 
           String effectiveEntryTypeName = entry.value is String
@@ -636,11 +660,11 @@ Widget Function() _getPageBuilder<T extends Object?>(
           } else 
           */
           if (!effectiveArgumentType.contains(effectiveEntryTypeName)) {
-            _logAndThrowError(ArgumentTypeError(
+            throw ArgumentTypeError(
               effectiveEntryType,
               currentArgument.runtimeType,
               "'${entry.key}'",
-            ));
+            );
           }
         }
       }
@@ -707,10 +731,13 @@ extension NavigatorStateExtension on NavigatorState {
     // if (requiredArgumentNames != null)
 
     assert(() {
+      final String name = page is AppPages ? page.name : page.toString();
+      late final String runtimeType = objectRuntimeType(page, 'String');
+
       if ((preventDuplicates ?? _shouldPreventDuplicates) &&
-          widget.pages.isNotEmpty &&
-          widget.pages.last.name == page.name) {
-        _duplicatedPage(page.name.runtimeType.toString());
+          getCurrentNavigatorRouteName(context) == name) {
+        // _duplicatedPage(page.name.runtimeType.toString());
+        throw StateError("Duplicated Page: $runtimeType");
       }
 
       return true;
@@ -851,4 +878,18 @@ extension NavigatorStateExtension on NavigatorState {
   void backToPage(dynamic page) => backToPageName(
         _effectiveRouteNameBuilder(page),
       );
+
+  Route? getCurrentNavigatorRoute(BuildContext context) {
+    Route? currentRoute;
+    popUntil((route) {
+      currentRoute = route;
+      return true;
+    });
+    return currentRoute;
+  }
+
+  /// Trick explained here: https://github.com/flutter/flutter/issues/20451
+  /// Note `ModalRoute.of(context).settings.name` doesn't always work.
+  String? getCurrentNavigatorRouteName(BuildContext context) =>
+      getCurrentNavigatorRoute(context)!.settings.name;
 }
